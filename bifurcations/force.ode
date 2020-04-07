@@ -1,0 +1,39 @@
+# reproduction of the bifurcation curves in Figure 5
+
+C=5e-3
+F=40
+Rp=0.96
+val = C*F/(pi*Rp^3)
+
+p p1=0.5,zeta=.32
+p pi2=0.07195590236721254,pi3 = 1,pi4 = 4.7
+p pi5=0.1,pi6 = 10
+p2=1-p1
+
+p56 = pi5/pi6
+ep4 = exp(pi4)
+ep5 = exp(pi5)
+
+#  force velocity curves F_A
+fp_neg(u)=-( 1+pi6*u/(exp(pi4)-1) )/( 1-pi6*u )
+fp_pos(u)=-((pi3+1)/(pi3*(1-exp(-p56/u))+1)) *( ep4*( 1-ep5*exp(-p56/u) )-(1-pi6*u)*(1-exp(-p56/u)) )/((1-pi6*u)*(ep4-1))
+
+#  force velocity curves F_{-A}
+fm_neg(u)=((pi3+1)/(pi3*(1-exp(p56/u))+1)) *( ep4*( 1-ep5*exp(p56/u) )-(1+pi6*u)*(1-exp(p56/u)) )/((1+pi6*u)*(ep4-1))
+fm_pos(u)=( 1-pi6*u/(exp(pi4)-1) )/( 1+pi6*u )
+
+fp(u)=if(u<0)then(fp_neg(u))else(fp_pos(u))
+fm(u)=if(u<0)then(fm_neg(u))else(fm_pos(u))
+fnet(u)=if(u==0)then(-1+2*p1)else(p1*fm(u)+(1-p1)*fp(u))
+
+u'=fnet(u)-zeta*u
+
+# test auxes. comment when finished.
+#u'=1
+#aux fa=p1*fm(u)+p2*fp(u)
+#aux fpa=fp(u)
+#aux fma=fm(u)
+
+@ dt=0.001
+@ total=100
+@ xlo=0,xhi=100
