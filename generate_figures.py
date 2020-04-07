@@ -1843,10 +1843,10 @@ def generate_figure(function, args, filenames, dpi=100):
 def main():
     
     figures = [
-        #(constriction,[],["constriction.pdf","constriction.png"]),
-        #(critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]),
-        #(twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]),
-        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]),
+        (constriction,[],["constriction.pdf","constriction.png"]), # Figure 1
+        (critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # Figure 2
+        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # Figure 3
+        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # Figure 4
         
         
     ]
