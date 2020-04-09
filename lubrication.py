@@ -1,5 +1,5 @@
 """
-implementation of lubrication model from Fai et al 2018.
+implementation of lubrication model from Fai et al 2017.
 
 With new nondimensionalized equations.
 
@@ -32,7 +32,7 @@ class lubrication(object):
 
     def __init__(self,
                  Rp=0.96,Rc=1.22,
-                 C=5e-3,mu=1.2,# confirmed with Thomas that 1.2 Pa*s is correct Nov 4, 2019. #mu=1.2e-3,
+                 C=5e-3,mu=1.2,
                  
                  pi3=1,pi4=4.7,pi5=0.1,pi6=None,
                  simulation_seed=0,
@@ -770,7 +770,7 @@ class lubrication(object):
     
     def pi_a(self,x,domain,zeta,d=False):
         """
-        function pi_a, probability of escale through (lower) boundary a
+        function pi_a, probability of escape through (lower) boundary a
         """
 
         

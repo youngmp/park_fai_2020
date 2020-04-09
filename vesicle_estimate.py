@@ -4,12 +4,12 @@ from lubrication import lubrication
 
 def main():
     
-    # initialize llubrication model with appropriate height.
+    # initialize lubrication model with appropriate height.
     # assume constant constriction diameter
     # check yptgf1/vesicle_estimates/vesicle_figure.svg and .png as wel as vesicle_estimate1.txt
 
     # in Silva et al Kapitein 2015 fig 1, height is roughly 0.08um
-    # in fig2, hight at constriction is rougly 0.15um, height in head is roughly 0.5um. Take Rp=1 and Rc=Rp+height.
+    # in fig2, height at constriction is roughly 0.15um, height in head is roughly 0.5um. Take Rp=1 and Rc=Rp+height.
     a = lubrication(phi1=.57,Rp=0.5,Rc=.65,
                     pi3=1,pi4=4.7,pi5=0.1,pi6=10,
                     mu=1.2,T=1,constriction='constant',U0=0.2,
