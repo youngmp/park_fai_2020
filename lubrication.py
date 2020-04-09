@@ -215,7 +215,7 @@ class lubrication(object):
 
         self.pi1_min=self.Rc/self.Rp
         #slef.pi2=
-        print('pi1*='+str(self.pi1_min)+', pi2='+str(self.pi2))
+        print('pi1*='+str(self.pi1_min)+' (minimum ratio Rc/Rp), pi2='+str(self.pi2))
 
         self.recompute_solution = recompute_solution
         self.use_old_solution = use_old_solution
