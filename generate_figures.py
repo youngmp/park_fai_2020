@@ -1,4 +1,6 @@
-# figure generation file
+# TODO 1/31/2020: combine critical_manifold_with_ze with crticial_manifold. need two plots: one wth the constriction, and 2x time plots, the other with C0+phase plots, bifurcation curves, and zeta.
+
+# figure generation file for whatever future paper
 
 # all bifurcation diagrams are generated using XPPAUTO. This file is for plotting purposes only.
 
@@ -18,7 +20,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from lib import collect_disjoint_branches
+#from lubrication_bk_2019_10_18 import lubrication
 from lubrication import lubrication
+#from agents import Agents,round_to_n
+
+#print('Warning: lubrication importing from old file lubrication_bk_2019_10_18.py')
 
 from bifurcations.cusp import *
 
@@ -50,6 +56,130 @@ color5pts = '#0000ff';color5pts_al = .18
 
 def round_to_n(x,n=3):
     return round(x, -int(floor(log10(x))) + (n - 1))
+
+def fill_axis(ax_main,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=True):
+    """
+    this function is to clean up the 2 parameter bifuraction data. most things here are hard-coded and will not generalize very well.
+    I put all this junk in this function so it can be accessed again for a minimal version of this data in another figure.
+    """
+    for i in range(len(keys)):
+        err1 = np.sum(np.abs(np.diff(val_dict[keys[i]][:,0])))
+        err2 = np.sum(np.abs(np.diff(val_dict[keys[i]][:,1])))
+
+        label = ''
+
+        zorder = 2
+        # this is a 2 par diagram, so ignore keys where one coordinate does not change.
+        if (err1>tol) and (err2>tol) and (keys[i] != 'br22') and (keys[i] != 'br34'):
+
+            markersize = 15
+            if keys[i] == 'br29':
+                marker = '*'
+                skipn = 200
+                label = ''
+                color = red
+                #color = '#19439c'
+                mew = 1
+                markersize = 20
+
+            elif keys[i] == 'br28':
+                marker = ''
+                skipn = 200
+                label = ''
+                color = red
+                #color = '#19439c'
+                mew = 1
+                markersize = 20
+
+                
+            elif (keys[i] == 'br27'):
+                marker = '+'
+                skipn = 200
+                label = ''
+                color = yellow
+                #color = '#535f42'
+                mew = 5
+                markersize = 20
+
+            elif keys[i] == 'br26':
+                marker = ''
+                skipn = 200
+                label = ''
+                color = yellow
+                #color = '#535f42'
+                mew = 5
+                markersize = 20
+
+                
+            elif keys[i] == 'br31':
+                marker = 'x'
+                skipn = 240
+                label = ''
+                color = lightpurp
+                #color = '#997f41'
+                mew = 5
+
+            elif keys[i] == 'br30':
+                marker = ''
+                skipn = 240
+                label = ''
+                color = lightpurp
+                #color = '#997f41'
+                mew = 5
+
+            elif keys[i] == 'br32':
+                marker = ''
+                skipn = 200
+                label = ''
+                color = purp
+                #color = '#3f0000'
+                mew = 5
+                markersize = 20
+                zorder = 3
+
+            elif keys[i] == 'br33':
+                marker = '4'
+                skipn = 200
+                label = ''
+                color = purp
+                #color = '#3f0000'
+                mew = 5
+                markersize = 20
+                zorder = 3
+                
+            else:
+                marker = ''
+
+            kw = {'color':color,'lw':0,'marker':marker,'markersize':markersize,'mew':mew,'zorder':zorder}
+            
+            x_vals = val_dict[keys[i]][:,0]
+            y_vals = val_dict[keys[i]][:,1]*ze_scale
+            
+            print('valid i=',i,'errs',err1,err2,'key=',keys[i])
+
+
+            if not(beautify):
+                color='k'
+                label=''
+                kw = {'color':'k','lw':0}
+                
+            ax_main.plot(x_vals,y_vals,
+                         color=color,label=label,lw=3,zorder=i)
+                
+            if marker != '':
+                if keys[i] == 'br27':
+                    cut = 7000
+                    # need to break this up because point density increases halfway through the curve
+                    ax_main.plot(x_vals[cut::skipn],y_vals[cut::skipn],**kw)
+
+                    ax_main.plot(x_vals[:cut:skipn*10],y_vals[:cut:skipn*10],**kw)
+
+                else:
+                    ax_main.plot(x_vals[::skipn],y_vals[::skipn],**kw)
+
+            label = ''
+
+    return ax_main
 
 def constriction():
     """
@@ -117,13 +247,13 @@ def constriction():
     ax11.plot([x[-1],x[-1]],[-a.base_radius,a.base_radius],color='k')
 
     # annotate Rp length
-    ax11.annotate(r'$R_p$', xy=(0, -a.Rc-.5), xytext=(0, -a.Rc-1.5), xycoords='data', 
+    ax11.annotate(r'$2R_p$', xy=(0, -a.Rc-.5), xytext=(0, -a.Rc-1.5), xycoords='data', 
             fontsize=10, ha='center', va='top',
             #bbox=dict(boxstyle='square', fc='white'),
             arrowprops=dict(arrowstyle='-[, widthB='+str(a.Rp)+', lengthB=.5', lw=.5))
 
     # annotate Rc length channel
-    ax11.annotate(r'$R_c$', xy=(3.5, 0.0), xytext=(4, 0), xycoords='data', 
+    ax11.annotate(r'$2R_c$', xy=(3.5, 0.0), xytext=(4, 0), xycoords='data', 
             fontsize=10, ha='left', va='center',
             #bbox=dict(boxstyle='square', fc='white'),
             arrowprops=dict(arrowstyle='-[, widthB='+str(a.Rc)+', lengthB=.5', lw=.5))
@@ -811,6 +941,7 @@ def critical_manifold_with_ze():
     ax23.set_ylabel('{0} {1}'.format(ax23.get_ylabel(), offset.get_text()))
 
     plt.tight_layout()
+
     return fig
 
 
@@ -1292,127 +1423,14 @@ def twopar_detailed():
     ax_main.text(.5125,6.*ze_scale,'3',fontsize=20,horizontalalignment='center')
     ax_main.text(1-.5125,6.*ze_scale,'3',fontsize=20,horizontalalignment='center')
     ax_main.text(.5,9*ze_scale,'1',fontsize=20,horizontalalignment='center')
-
-
     
     val_dict,type_dict = collect_disjoint_branches(twopar,sv_tol=.05,redundant_threshold=.00)
     
     keys = list(val_dict.keys())
-    tol = 1e-3
     
     #label = 'Saddle-Node'
-    
-    for i in range(len(keys)):
-        err1 = np.sum(np.abs(np.diff(val_dict[keys[i]][:,0])))
-        err2 = np.sum(np.abs(np.diff(val_dict[keys[i]][:,1])))
 
-        label = ''
-
-        zorder = 2
-        # this is a 2 par diagram, so ignore keys where one coordinate does not change.
-        if (err1>tol) and (err2>tol) and (keys[i] != 'br22') and (keys[i] != 'br34'):
-
-            markersize = 15
-            if keys[i] == 'br29':
-                marker = '*'
-                skipn = 200
-                label = ''
-                color = red
-                #color = '#19439c'
-                mew = 1
-                markersize = 20
-
-            elif keys[i] == 'br28':
-                marker = ''
-                skipn = 200
-                label = ''
-                color = red
-                #color = '#19439c'
-                mew = 1
-                markersize = 20
-
-                
-            elif (keys[i] == 'br27'):
-                marker = '+'
-                skipn = 200
-                label = ''
-                color = yellow
-                #color = '#535f42'
-                mew = 5
-                markersize = 20
-
-            elif keys[i] == 'br26':
-                marker = ''
-                skipn = 200
-                label = ''
-                color = yellow
-                #color = '#535f42'
-                mew = 5
-                markersize = 20
-
-                
-            elif keys[i] == 'br31':
-                marker = 'x'
-                skipn = 240
-                label = ''
-                color = lightpurp
-                #color = '#997f41'
-                mew = 5
-
-            elif keys[i] == 'br30':
-                marker = ''
-                skipn = 240
-                label = ''
-                color = lightpurp
-                #color = '#997f41'
-                mew = 5
-
-            elif keys[i] == 'br32':
-                marker = ''
-                skipn = 200
-                label = ''
-                color = purp
-                #color = '#3f0000'
-                mew = 5
-                markersize = 20
-                zorder = 3
-
-            elif keys[i] == 'br33':
-                marker = '4'
-                skipn = 200
-                label = ''
-                color = purp
-                #color = '#3f0000'
-                mew = 5
-                markersize = 20
-                zorder = 3
-                
-            else:
-                marker = ''
-
-            kw = {'color':color,'lw':0,'marker':marker,'markersize':markersize,'mew':mew,'zorder':zorder}
-            
-            x_vals = val_dict[keys[i]][:,0]
-            y_vals = val_dict[keys[i]][:,1]*ze_scale
-            
-            print('valid i=',i,'errs',err1,err2,'key=',keys[i])
-
-            #print('values',val_dict[keys[i]][:,0],val_dict[keys[i]][:,1]*ze_scale)
-            ax_main.plot(x_vals,y_vals,
-                         color=color,label=label,lw=3,zorder=i)
-                             
-            if marker != '':
-                if keys[i] == 'br27':
-                    cut = 7000
-                    # need to break this up because point density increases halfway through the curve
-                    ax_main.plot(x_vals[cut::skipn],y_vals[cut::skipn],**kw)
-
-                    ax_main.plot(x_vals[:cut:skipn*10],y_vals[:cut:skipn*10],**kw)
-
-                else:
-                    ax_main.plot(x_vals[::skipn],y_vals[::skipn],**kw)
-
-            label = ''
+    ax_main = fill_axis(ax_main,keys,val_dict,type_dict,ze_scale)
 
     ze_min = 0*ze_scale
     ze_max = 10*ze_scale
@@ -1812,6 +1830,30 @@ def pi4_vs_pi5():
     return fig
 
 
+
+def minimal_2par():
+    """
+    minimal 2 parameter figure for use in final figure in discussion.
+    """
+
+    a = lubrication()
+    ze_scale = 1e-6*(6*np.pi*a.Rp*a.mu) # kg/s
+
+    fig = plt.figure(figsize=(3,3))
+    ax = fig.add_subplot(111)
+    
+    twopar = np.loadtxt('bifurcations/allinfo_2par.dat')
+
+    val_dict,type_dict = collect_disjoint_branches(twopar,sv_tol=.05,redundant_threshold=.00)
+    keys = list(val_dict.keys())
+
+    ax = fill_axis(ax,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=False)
+    ax.set_yscale('log')
+
+    ax.set_ylim(3e-6,2e-2)
+    ax.set_xlim(.4,.6)
+
+    return fig
     
 
 def generate_figure(function, args, filenames, dpi=100):
@@ -1837,12 +1879,11 @@ def generate_figure(function, args, filenames, dpi=100):
 def main():
     
     figures = [
-        (constriction,[],["constriction.pdf","constriction.png"]), # Figure 1
-        (critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # Figure 2
-        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # Figure 3
-        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # Figure 4
-        
-        
+        (constriction,[],["constriction.pdf","constriction.png"]), # figure 1
+        (critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # figure 2
+        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # figure 3
+        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # figure 4
+        (minimal_2par,[],["minimal_2par.pdf"]), # figure 5
     ]
     
     for fig in figures:
