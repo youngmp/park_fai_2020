@@ -1,7 +1,4 @@
-# TODO 1/31/2020: combine critical_manifold_with_ze with crticial_manifold. need two plots: one wth the constriction, and 2x time plots, the other with C0+phase plots, bifurcation curves, and zeta.
-
-# figure generation file for whatever future paper
-
+# figure generation file
 # all bifurcation diagrams are generated using XPPAUTO. This file is for plotting purposes only.
 
 from decimal import Decimal
@@ -20,11 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from lib import collect_disjoint_branches
-#from lubrication_bk_2019_10_18 import lubrication
 from lubrication import lubrication
-#from agents import Agents,round_to_n
-
-#print('Warning: lubrication importing from old file lubrication_bk_2019_10_18.py')
 
 from bifurcations.cusp import *
 
