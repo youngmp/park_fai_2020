@@ -1,5 +1,5 @@
 """
-implementation of lubrication model from Fai et al 2017.
+implementation of nondimensional lubrication model from Fai et al 2017 and Park and Fai 2020. deterministic only.
 
 With new nondimensionalized equations.
 
@@ -13,11 +13,13 @@ pi*Rc**2 -> pi*Rp**2
 
 """
 
+
 import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scipy.integrate import odeint
 from scipy.interpolate import interp1d
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -47,19 +49,15 @@ class lubrication(object):
                  al=14,be=126,p1=4,gm=0.322,
                  
                  eps=1,
-                 eps_dynamic=False,
-                 eps_noise_scale='sqrt',
                  
                  Z0=-5,U0=1,
-                 eta_fast=0,
-                 eta_slow=0,
                  
                  motors=True,
                  dimensional_plots=False,
                  
                  show_manifold=False,
                  show_stable_branch=False,
-                 noise='white',
+                 method='euler',
                  
                  recompute_solution=False,
                  save_solution=False,
@@ -89,13 +87,13 @@ class lubrication(object):
 
         integration: choose integration type. euler vs iteration.
 
-        noise: type of noise added to the system. white noise vs poisson noise
-
         save_solution: save simulation data True or False
         data_dir: directory for saving generic data files
 
         """
 
+        self.method = method
+        
         self.base_radius = base_radius
         self.inner_width = inner_width
         
@@ -106,17 +104,11 @@ class lubrication(object):
         self.ze = ze
         self.simulation_seed = simulation_seed
 
-        self.noise = noise
         self.show_manifold = show_manifold
         self.show_stable_branch = show_stable_branch
         self.constriction = constriction
 
         self.eps=eps
-        self.eps_noise_scale = eps_noise_scale
-        self.eps_dynamic = eps_dynamic
-
-        if self.eps_dynamic:
-            print('warning: epsilon chosen to be dynamic. revert as needed')
         
         # model parameters
         self.phi1 = phi1
@@ -229,8 +221,6 @@ class lubrication(object):
         self.U0 = U0
 
         
-        self.eta_fast = eta_fast
-        self.eta_slow = eta_slow
 
         self.dimensional_plots = dimensional_plots
         
@@ -251,10 +241,7 @@ class lubrication(object):
                             +'_N='+str(self.N)\
                             +'_dt='+str(self.dt)\
                             +'_T='+str(self.T)\
-                            +'_eta_fast='+str(self.eta_fast)\
-                            +'_eta_slow'+str(self.eta_slow)\
-                            +'_eps='+str(self.eps)\
-                            +'_eps_dynamic='+str(self.eps_dynamic)
+                            +'_eps='+str(self.eps)
                             #+''+str()\
                             #+''+str()\
 
@@ -538,17 +525,11 @@ class lubrication(object):
             
             return np.sum(h**(-2)+h**(-3),axis=-1)*self.dx
 
-    def dy(self,y,t,**kwargs):
+    def dy(self,y,t):
         U = y[0]
         Z = y[1]
-
-        if 'zeta' in kwargs:
-            zeta = kwargs['zeta']
-            eps = zeta*self.dt
-            
-        else:
-            zeta = self.viscous_drag(Z)
-            eps = self.eps
+        
+        zeta = self.viscous_drag(Z)
 
         return np.array([(self.F(U) - U*zeta)/self.eps,U])
 
@@ -572,24 +553,6 @@ class lubrication(object):
                 sol[0] = 0
             
         return sol
-
-    def noise_vector(self,eps):
-
-        if self.noise == 'white':
-            
-            xi_fast = np.random.normal(loc = 0.0, scale = np.sqrt(self.dt))
-            xi_slow = np.random.normal(loc = 0.0, scale = np.sqrt(self.dt))
-
-            noise_vector = np.array([self.eta_fast*xi_fast,
-                                     self.eta_slow*xi_slow])
-
-            if self.eps_noise_scale == '1/sqrt(eps)':
-                noise_vector /= np.sqrt(eps)
-                
-            elif self.eps_noise_scale == '1/eps':
-                noise_vector /= eps
-        
-        return noise_vector
 
     def run_sim(self):
         """
@@ -617,11 +580,13 @@ class lubrication(object):
                 self.Z = np.zeros(self.TN)
                 self.t = np.linspace(0,self.T,self.TN)
 
-
-                if self.eta_fast == 0 and self.eta_slow == 0:
+                if self.method == 'euler':
                     self.run_euler()
+                elif self.method == 'odeint':
+                    self.run_odeint()
+
                 else:
-                    self.run_euler() # contains self.lc_data
+                    raise Exception('Unrecognized numerical method'+str(self.method))
 
                 if self.save_solution:
                     np.savetxt(self.sol_fname,self.sol)
@@ -643,8 +608,6 @@ class lubrication(object):
         self.Z = self.sol[:,1]            
         
     def run_euler(self):
-        
-        np.random.seed(self.simulation_seed)
 
         # preallocate
         self.sol = np.zeros((len(self.t),2)) # column 1 is U, column 2 is Z'
@@ -652,48 +615,36 @@ class lubrication(object):
 
         # initial velocity and position
         self.sol[0,0]=self.U0; self.sol[0,1]=self.Z0
-
-
-        self.switch_times = []
-        side = 0
         
         i = 0 # counter for time
 
-        
-
         while (self.t[i] < self.t[-1]):
-            #print(self.sol[i,0],self.t[i])
 
-            
-            # if epsilon = zeta*dt, the function needs to be called differently.
-            # we might remove this option in the future
-            if self.eps_dynamic:
-                zeta = self.viscous_drag(self.sol[i,1])
-                eps = zeta*self.dt
-                f = self.dy(self.sol[i,:],self.t[i],zeta=zeta)
-
-            else:
-                eps = self.eps
-                f = self.dy(self.sol[i,:],self.t[i])
+            # right-hand side
+            f = self.dy(self.sol[i,:],self.t[i])
 
             # update solution
-            noise = self.noise_vector(eps)            
-            self.sol[i+1,:] = self.sol[i,:]+ self.dt*f + noise
-
-            if (side == 0) and (self.sol[i+1,0]*self.U_scale >= 200):
-                side = 1
-                self.switch_times.append(self.t[i])
-
-            if (side == 1) and (self.sol[i+1,0]*self.U_scale <= -200):
-                side = 0
-                self.switch_times.append(self.t[i])
+            self.sol[i+1,:] = self.sol[i,:]+ self.dt*f
 
             self.zeta[i+1] = self.viscous_drag(self.sol[i,1])
+            
             # force boundary conditions
             self.sol[i+1,:] = self.check_boundary(self.sol[i+1,:])
 
             i += 1
+
         
+    def run_odeint(self):
+
+        # preallocate
+        #self.sol = np.zeros((len(self.t),2)) # column 1 is U, column 2 is Z'
+        #self.zeta = np.zeros(len(self.t))
+
+        # initial velocity and position
+        #self.sol[0,0]=self.U0; self.sol[0,1]=self.Z0
+
+        self.sol = odeint(self.dy,self.t,[self.U0,self.Z0])
+
     def get_stable_branch(self,phi1,zeta):
         """
         estimate on the velocity of the stable branch
@@ -753,85 +704,6 @@ class lubrication(object):
         plt.close()
 
         
-    def psi(self,x,domain,zeta):
-        """
-        function psi, used in probability/first passage time problems, defined in Gardiner, for convenience.
-
-        x: domain vector
-        zeta: scalar
-        """
-
-        dx = (domain[-1]-domain[-2])/len(domain)
-        f = exp(2/self.eta_fast*np.cumsum(self.F(domain)-zeta*domain)*dx)
-        
-        return interp1d(domain,f)(x)
-
-
-    
-    def pi_a(self,x,domain,zeta,d=False):
-        """
-        function pi_a, probability of escape through (lower) boundary a
-        """
-
-        
-        if d:
-            return -self.pi_b(x,domain,zeta,d=True)
-        else:
-            return 1 - self.pi_b(x,domain,zeta)
-        
-        
-    def pi_b(self,x,domain,zeta,d=False):
-        
-        dx = (domain[-1]-domain[-2])/len(domain)
-        tot = np.sum(self.psi(domain,domain,zeta))*dx
-        f = np.cumsum(self.psi(domain,domain,zeta))*dx
-
-        #print(len(domain),len(f),x)
-        if d:
-            #print(self.psi(x,domain,zeta))
-            return self.psi(x,domain,zeta)/tot
-        else:
-            return interp1d(domain,f)(x)/tot
-
-    
-    def mfpt_ode(self,y,t,domain=np.zeros(1),zeta=0):
-        """
-        for the calculation of mean first passage time
-        2nd order ode
-        """
-        
-        y1 = y[0]
-        y2 = y[1]
-
-        dx = (domain[-1]-domain[-2])/len(domain)
-        tot = np.sum(self.psi(domain,domain,zeta))*dx
-        
-        #print(self.psi(t,domain,zeta),tot,-self.pi_b(t,domain,zeta,d=True),self.pi_a(t,domain=domain,zeta=zeta,d=True),(self.eta_fast*self.pi_a(t,domain=domain,zeta=zeta)))
-
-        A = self.F(t)-zeta*t
-        pi_a = self.pi_a(t,domain=domain,zeta=zeta)
-        dpi_a = self.pi_a(t,domain=domain,zeta=zeta,d=True)
-
-        B = self.eta_fast
-        
-        return np.array([y2,2*(-pi_a-2*y1-(A*pi_a + B*dpi_a)*y2)/(B*dpi_a)])
-
-    def run_mfpt(self):
-
-        # pick a zeta parameter. pi_a,b, psi will be computed once for a given zeta, then recomputed (without history) for another zeta.
-        self.zeta_par = 1
-        self.x_test = np.linspace(-9e-2,9e-2,201)
-
-        dx = (self.x_test[-1]-self.x_test[-2])/len(self.x_test)
-
-        self.mfpt = np.zeros((len(self.x_test),2))
-
-        zeta = 1
-
-        for i in range(len(self.x_test)-1):
-            t = self.x_test[i]
-
-            self.mfpt[i+1,:] = self.mfpt[i,:] + dx*self.mfpt_ode(self.mfpt[i,:],t,domain=self.x_test,zeta=self.zeta_par)
         
     
     def plot(self,choice='Z'):
@@ -893,18 +765,9 @@ class lubrication(object):
             ax3.set_xlabel('z-distance from center of constricion')
             ax3.set_ylabel('constriction profile')
 
-            
-            if self.eps_dynamic:
-                eps_label = ''#'; eps_dynamic='+str(self.eps_dynamic)
-            else:
-                eps_label = ''
+            eps_label = str(self.eps)
 
-            if self.eta_fast > 0:
-                noise_label = r'; $\eta_\text{fast}='+str(self.eta_fast)+r'$'
-            else:
-                noise_label = r'; $\epsilon='+str(self.eps)+r'$'
-
-            ax3.set_title(r'$R_p='+str(self.Rp)+r'$; $R_c='+str(self.Rc)+r'$; $F_0='+str(self.F0)+r'$; $\pi_5='+str(self.pi5)+r'$'+noise_label+eps_label)
+            ax3.set_title(r'$R_p='+str(self.Rp)+r'$; $R_c='+str(self.Rc)+r'$; $F_0='+str(self.F0)+r'$; $\pi_5='+str(self.pi5)+r'$'+eps_label)
 
             plt.tight_layout()
 
@@ -1088,8 +951,6 @@ class lubrication(object):
             
 def main():
 
-    # with eps_dynamic = True, eta_fast = 2.15e-2 seems to work to reproduce fai et al 2017.
-    # here, the lowest eta_fast value is approximately 0.00885 == 8.85e-3
     
     a = lubrication(T=1,dt=.002,
                     Z0=-5,U0=.5,
@@ -1108,13 +969,8 @@ def main():
                     #ze=0.0,
                     
                     phi1=.56,#pi5=0.1,
-                    #eta_fast=7.9e-4,eta_slow=0,
-                    #eta_fast=.008,eta_slow=0,
-                    eta_fast=0,eta_slow=0,
                     
-                    eps_noise_scale='1/eps',#'1/sqrt(eps)',
                     eps=0.1,
-                    eps_dynamic=False, #1.35e-2
                     
                     mu=1.2,
                     constriction='piecewise',motors=True,dimensional_plots=False,
