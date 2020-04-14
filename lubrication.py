@@ -541,8 +541,10 @@ class lubrication(object):
         only non-negative velocities are allowed at the base of the channel and only nonpostive velocities are allowed at the end of the channel.
         """
 
+        sol = np.asarray(sol)
+
         # boundary conditions # boundary conditions are set in dmensional units
-        if sol[1]*self.Z_scale < -5:
+        if sol[1]*self.Z_scale <= -5:
             sol[1] = -5/self.Z_scale # position
             #if sol[0] < 0:
             #    sol[0] = 0 # velocity
@@ -619,7 +621,7 @@ class lubrication(object):
         i = 0 # counter for time
 
         while (self.t[i] < self.t[-1]):
-
+            
             # right-hand side
             f = self.dy(self.sol[i,:],self.t[i])
 
@@ -629,21 +631,22 @@ class lubrication(object):
             self.zeta[i+1] = self.viscous_drag(self.sol[i,1])
             
             # force boundary conditions
-            self.sol[i+1,:] = self.check_boundary(self.sol[i+1,:])
+            self.sol[i,:] = self.check_boundary(self.sol[i,:])
+
 
             i += 1
 
         
+            
+        
     def run_odeint(self):
 
-        # preallocate
-        #self.sol = np.zeros((len(self.t),2)) # column 1 is U, column 2 is Z'
-        #self.zeta = np.zeros(len(self.t))
+        self.sol = odeint(self.dy,[self.U0,self.Z0],self.t)
 
-        # initial velocity and position
-        #self.sol[0,0]=self.U0; self.sol[0,1]=self.Z0
+        # impose boundary conditions post-hoc
+        for i in range(len(self.sol[:,0])):
+            self.sol[i,:] = self.check_boundary(self.sol[i,:])
 
-        self.sol = odeint(self.dy,self.t,[self.U0,self.Z0])
 
     def get_stable_branch(self,phi1,zeta):
         """
