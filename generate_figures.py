@@ -205,7 +205,7 @@ def constriction():
                     pi3=1,pi4=4.7,pi5=0.1,pi6=10,
                     mu=1.2,T=T1,constriction='piecewise',U0=0.2,
                     dt=0.02,eps=1,
-                    F0=50)
+                    F0=50,method='euler')
     a.Z0 = -5/a.Rp
     
     # run example trajectory
@@ -284,7 +284,7 @@ def constriction():
     ################################################################ example 2    
     a.__init__(U0=0.02,T=T2,dt=0.02,eps=1,
                Rp=1.5,Rc=2.15,
-               phi1=0.54,F0=200,n0=200,
+               phi1=0.54,F0=200,n0=200,method='euler',
                pi3=1,pi4=4.7,pi5=0.02,pi6=10,constriction='piecewise')
     
     a.Z0=-5/a.Rp
@@ -836,7 +836,7 @@ def critical_manifold_with_ze():
 
     # make some labels scientific notation
     ax12.set_title(r'\textbf{B} Bifurcation Curve',x=0.2)
-    ax12.set_xlabel(r'$\zeta$ (Kg/s)')
+    ax12.set_xlabel(r'$\zeta$ (kg/s)')
     ax12.set_ylabel(r'$U$ ($\mu$m/s)')
     
 
@@ -844,7 +844,7 @@ def critical_manifold_with_ze():
     
     ax13.set_title(r'\textbf{C} Viscous Drag',x=.2)
     ax13.set_xlabel(r'$Z$ ($\mu$m)')
-    ax13.set_ylabel(r'$\zeta$ (Kg/s)')
+    ax13.set_ylabel(r'$\zeta$ (kg/s)')
 
     ax13.ticklabel_format(axis='y',scilimits=(0,0),style='sci') #https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.ticklabel_format.html
     #ax13.yaxis.offsetText.set_visible(False)
@@ -865,12 +865,12 @@ def critical_manifold_with_ze():
     #ax21.set_xlabel(r'$Z$ ($\mu$m)')
     ax21.set_ylabel(r'$U$ ($\mu$m/s)')
     
-    ax22.set_xlabel(r'$\zeta$ (Kg/s)')
+    ax22.set_xlabel(r'$\zeta$ (kg/s)')
     
     ax23.set_title(r'\textbf{F} Viscous Drag',x=.2)
     ax23.set_xlabel(r'$Z$ ($\mu$m)')
     #ax23.set_xlabel(r'$Z$')
-    ax23.set_ylabel(r'$\zeta$ (Kg/s)')
+    ax23.set_ylabel(r'$\zeta$ (kg/s)')
 
     #p = ax11_contour.collections[0].get_paths()[0]
     #v = p.vertices
@@ -1512,7 +1512,7 @@ def twopar_detailed():
     ax_main.text(.556,3*ze_scale,'SN')
             
     ax_main.set_xlabel(phi_label,fontsize=size)
-    ax_main.set_ylabel(ze_label + ' (Kg/s)',fontsize=size)
+    ax_main.set_ylabel(ze_label + ' (kg/s)',fontsize=size)
 
     #plt.rcParams['legend.numpoints'] = 1
     ax_ze1.legend()
@@ -1535,9 +1535,9 @@ def twopar_detailed():
     ax_ph2.set_ylim(u_min,u_max)
     
     
-    ax_ze1.set_title(r'\textbf{A} '+ze_label+z1_label+ ' (Kg/s)',x=.2,fontsize=size)
-    ax_ze2.set_title(r'\textbf{B} '+ze_label+z2_label+ ' (Kg/s)',x=.2,fontsize=size)
-    ax_ze3.set_title(r'\textbf{C} '+ze_label+z3_label+ ' (Kg/s)',x=.2,fontsize=size)
+    ax_ze1.set_title(r'\textbf{A} '+ze_label+z1_label+ ' (kg/s)',x=.2,fontsize=size)
+    ax_ze2.set_title(r'\textbf{B} '+ze_label+z2_label+ ' (kg/s)',x=.2,fontsize=size)
+    ax_ze3.set_title(r'\textbf{C} '+ze_label+z3_label+ ' (kg/s)',x=.2,fontsize=size)
 
     ax_main.set_title(r'\textbf{D}',x=.0,fontsize=size)
     
@@ -1548,8 +1548,8 @@ def twopar_detailed():
     #ax_ze2.set_xlabel('$\phi_2$')
     ax_ze3.set_xlabel(phi_label,fontsize=size)
 
-    ax_ph1.set_xlabel(ze_label + ' (Kg/s)',fontsize=size)
-    ax_ph2.set_xlabel(ze_label + ' (Kg/s)',fontsize=size)
+    ax_ph1.set_xlabel(ze_label + ' (kg/s)',fontsize=size)
+    ax_ph2.set_xlabel(ze_label + ' (kg/s)',fontsize=size)
 
     ax_ze1.set_ylabel(U_label,fontsize=size)
     ax_ze2.set_ylabel(U_label,fontsize=size)
@@ -1698,7 +1698,7 @@ def pi4_vs_pi5():
 
     ax12.set_xlim(0.4,0.6)
     ax12.set_ylim(ze_min,ze_max)
-    ax12.set_ylabel(r'$\zeta$  (Kg/s)',fontsize=12)
+    ax12.set_ylabel(r'$\zeta$  (kg/s)',fontsize=12)
     #ax12.set_xlabel('$\phi_1$')
 
     ax12.set_title(r'\textbf{B} $\pi_4=3$, $\pi_5=0.15$')
@@ -1716,10 +1716,10 @@ def pi4_vs_pi5():
     ax21.set_xlim(0.4,0.6)
     ax21.set_ylim(-0.1*ze_scale,ze_max)
     ax21.set_xlabel('$\phi_1$',fontsize=12)
-    #ax21.set_ylabel(r'$\zeta$  (Kg/s)',fontsize=12)
+    #ax21.set_ylabel(r'$\zeta$  (kg/s)',fontsize=12)
 
     ax21.set_title(r'\textbf{C} $\pi_4=1.5$, $\pi_5=0.3$')
-    ax21.set_ylabel(r'$\zeta$ (Kg/s)',fontsize=12)
+    ax21.set_ylabel(r'$\zeta$ (kg/s)',fontsize=12)
 
     
     ################### pi4=3, pi5=0.3
@@ -1735,7 +1735,7 @@ def pi4_vs_pi5():
     ax22.set_ylim(ze_min,ze_max)
     ax22.set_xlabel('$\phi_1$',fontsize=12)
 
-    ax22.set_ylabel(r'$\zeta$  (Kg/s)',fontsize=12)
+    ax22.set_ylabel(r'$\zeta$  (kg/s)',fontsize=12)
 
     ax22.set_title(r'\textbf{D} $\pi_4=3$, $\pi_5=0.3$')
 
@@ -1753,7 +1753,7 @@ def pi4_vs_pi5():
     skipn = 3
     ax23.scatter(x[::skipn],y[::skipn]*ze_scale,s=1,color='k')
 
-    ax23.set_ylabel(r'$\zeta$  (Kg/s)',fontsize=12)
+    ax23.set_ylabel(r'$\zeta$  (kg/s)',fontsize=12)
 
     ax12.set_xlim(0.4,0.6)
     ax21.set_xlim(0.4,0.6)
@@ -1873,10 +1873,10 @@ def main():
     
     figures = [
         (constriction,[],["constriction.pdf","constriction.png"]), # figure 1
-        (critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # figure 2
-        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # figure 3
-        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # figure 4
-        (minimal_2par,[],["minimal_2par.pdf"]), # figure 5
+        #(critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # figure 2
+        #(twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # figure 3
+        #(pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # figure 4
+        #(minimal_2par,[],["minimal_2par.pdf"]), # figure 5
     ]
     
     for fig in figures:
