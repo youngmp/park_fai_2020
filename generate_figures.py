@@ -47,13 +47,12 @@ color3pts = '#ffffbd';color3pts_al = .47
 color5pts = '#0000ff';color5pts_al = .18
 
 
-def round_to_n(x,n=3):
-    return round(x, -int(floor(log10(x))) + (n - 1))
-
 def fill_axis(ax_main,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=True):
     """
-    this function is to clean up the 2 parameter bifuraction data. most things here are hard-coded and will not generalize very well.
-    I put all this junk in this function so it can be accessed again for a minimal version of this data in another figure.
+    this function is to clean up the 2 parameter bifuraction data. most
+    things here are hard-coded and will not generalize very well.
+    I put all this junk in this function so it can be accessed again for
+    a minimal version of this data in another figure.
     """
     for i in range(len(keys)):
         err1 = np.sum(np.abs(np.diff(val_dict[keys[i]][:,0])))
@@ -174,6 +173,7 @@ def fill_axis(ax_main,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=True):
 
     return ax_main
 
+
 def constriction():
     """
     plot constriction diagram with time plots
@@ -189,7 +189,7 @@ def constriction():
         
         
     fig = plt.figure(figsize=(8,3.3))
-    gs = gridspec.GridSpec(ncols=3,nrows=2)#fig.add_gridspec(2,3)
+    gs = gridspec.GridSpec(ncols=3,nrows=2)
 
     ax11 = fig.add_subplot(gs[0,0])
     ax12 = fig.add_subplot(gs[0,1])
@@ -223,7 +223,7 @@ def constriction():
     U1b = a.U*a.U_scale
     Z1b = a.Z*a.Z_scale
     
-    x = np.linspace(-7,7,1000) # dimensional
+    x = np.linspace(-7,7,1000)  # dimensional
     x2 = np.linspace(0,2*pi-(2*pi)/200,200)
 
     # plot vesicle
@@ -271,15 +271,11 @@ def constriction():
     # draw arrow of motion
     ax11.annotate('',xy=(-5,0),xytext=(-a.Rp,0),xycoords='data',arrowprops=dict(arrowstyle='<-',facecolor='k',lw=.5))
 
-    #ax11.annotate('',xy=(-5,0),xytext=(-a.Rp,0),arrowprops=dict(facecolor='tab:red',arrowstyle='<|-', lw=.5))
-    #ax11.annotate('',xy=(-a.Rp,0),xytext=(-4.7,0),xycoords='data',arrowprops=dict(arrowstyle='simple',facecolor='k',lw=.5))
-    #ax11.scatter(-5,0,s=40,facecolor='black',marker='x')
+    ax12.plot(t1[:-1],U1[:-1],color='black',label='Initial Condition 1')
+    ax13.plot(t1[:-1],Z1[:-1],color='black')
 
-    ax12.plot(t1,U1,color='black',label='Initial Condition 1')
-    ax13.plot(t1,Z1,color='black')
-
-    ax12.plot(t1b,U1b,color='tab:red',label='Initial Condition 2')
-    ax13.plot(t1b,Z1b,color='tab:red')
+    ax12.plot(t1b[:-1],U1b[:-1],color='tab:red',label='Initial Condition 2')
+    ax13.plot(t1b[:-1],Z1b[:-1],color='tab:red')
 
     ################################################################ example 2    
     a.__init__(U0=0.02,T=T2,dt=0.02,eps=1,
@@ -315,44 +311,15 @@ def constriction():
     ax21.plot([x[-1],x[-1]],[-a.base_radius,a.base_radius],color='k')
     
     
-    ax22.plot(t2,U2,color='black')
-    ax23.plot(t2,Z2,color='black')
+    ax22.plot(t2[:-1],U2[:-1],color='black')
+    ax23.plot(t2[:-1],Z2[:-1],color='black')
 
-    ax22.plot(t2b,U2b,color='tab:red')
-    ax23.plot(t2b,Z2b,color='tab:red')
+    ax22.plot(t2b[:-1],U2b[:-1],color='tab:red')
+    ax23.plot(t2b[:-1],Z2b[:-1],color='tab:red')
 
     # label starting point
     #ax21.annotate('',xy=(-a.Rp,0),xytext=(-4.7,0),xycoords='data',arrowprops=dict(arrowstyle='simple',facecolor='k',lw=.5))
     #ax21.scatter(-5,0,s=40,facecolor='black',marker='x')
-
-
-    """
-    # annotate Rp length
-    ax21.annotate(r'$R_p$', xy=(1.5, 0.0), xytext=(2, 0), xycoords='data', 
-            fontsize=10, ha='left', va='center',
-            #bbox=dict(boxstyle='square', fc='white'),
-            arrowprops=dict(arrowstyle='-[, widthB='+str(a.Rp)+', lengthB=.5', lw=.5))
-
-    # annotate Rc length channel
-    ax21.annotate(r'$R_c$', xy=(4, 0.0), xytext=(4.5, 0), xycoords='data', 
-            fontsize=10, ha='left', va='center',
-            #bbox=dict(boxstyle='square', fc='white'),
-            arrowprops=dict(arrowstyle='-[, widthB='+str(a.Rc)+', lengthB=.5', lw=.5))
-
-    # annotate base diameter
-    ax21.annotate(r'', xy=(-6, -a.base_radius), xytext=(-6, a.base_radius), xycoords='data', 
-            fontsize=10, ha='center', va='center',
-            #bbox=dict(boxstyle='square', fc='white'),
-            arrowprops=dict(arrowstyle='<->', lw=.5))
-
-    ax21.text(-5.9,0,r'$'+str(2*a.base_radius)+'\mu$m')
-
-    # annotate constriction length
-    ax21.annotate(r'$'+str(a.inner_width)+'\mu$m', xy=(0, a.Rc+1), xytext=(0, a.Rc+2), xycoords='data', 
-            fontsize=10, ha='center', va='bottom',
-            #bbox=dict(boxstyle='square', fc='white'),
-            arrowprops=dict(arrowstyle='-[, widthB='+str(a.inner_width/2*.9)+', lengthB=.5', lw=.5))
-    """
 
     ax11.axis('off')
     ax21.axis('off')
@@ -627,8 +594,15 @@ def critical_manifold_with_ze():
     ax12_contour = ax12.contour(ze_rangem*ze_scale1,Um*a.U_scale,D,[0],colors='k')
     ax12.clear()
 
-    p0=ax12_contour.collections[0].get_paths()[0];x0=p0.vertices[:,0];y0=p0.vertices[:,1]
-    p1=ax12_contour.collections[0].get_paths()[1];x1=p1.vertices[:,0];y1=p1.vertices[:,1]
+    p0 = ax12_contour.collections[0].get_paths()[0]
+    p1 = ax12_contour.collections[0].get_paths()[1]
+    
+    x0 = p0.vertices[:,0]
+    y0 = p0.vertices[:,1]
+    
+    x1 = p1.vertices[:,0]
+    y1 = p1.vertices[:,1]
+
 
     idx0 = np.argmax(x0)
     
