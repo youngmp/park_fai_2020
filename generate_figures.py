@@ -6,7 +6,8 @@ from matplotlib import rcParams
 from matplotlib.collections import PatchCollection
 #rcParams['font.family'] = 'Times New Roman'
 
-rcParams['agg.path.chunksize'] = 10000
+from mayavi import mlab
+#rcParams['agg.path.chunksize'] = 10000
 
 import os
 import pickle
@@ -15,6 +16,11 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import proj3d
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, mark_inset)
+
 
 from lib import collect_disjoint_branches
 from lubrication import lubrication
@@ -28,30 +34,29 @@ import matplotlib as mpl
 #rc('font',**{'family':'serif','serif':['Palatino']})
 #rc('text', usetex=True)
 
-#mpl.rcParams['text.usetex'] = True
-#mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}',
-#                                       r'\usepackage{siunitx}',
-#                                       r"\usepackage[utf8]{inputenc}"]
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['pgf.texsystem'] = 'pdflatex'
+mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}',
+                                       r'\usepackage{siunitx}']
 
-pgf_with_latex = {                      # setup matplotlib to use latex for output
-    "pgf.texsystem": "pdflatex",        # change this if using xetex or lautex
-    "text.usetex": True,                # use LaTeX to write all text
-    "font.family": "serif",
-    "font.serif": [],                   # blank entries should cause plots 
-    "font.sans-serif": [],              # to inherit fonts from the document
-    "font.monospace": [],
-#     "axes.labelsize": 10,               # LaTeX default is 10pt font.
-     "font.size": 10,
-#     "legend.fontsize": 8,               # Make the legend/label fonts 
-    "xtick.labelsize": 10,               # a little smaller
-    "ytick.labelsize": 10,
-    "pgf.preamble": [
-        r"\usepackage[utf8x]{inputenc}",    # use utf8 fonts 
-        r"\usepackage[T1]{fontenc}",        # plots will be generated
-        r"\usepackage{amsmath}",    # use utf8 fonts 
-        r"\usepackage[detect-all,locale=DE]{siunitx}",        # plots will be generated
-        ]                                   # using this preamble
-    }
+# pgf_with_latex = {                      # setup matplotlib to use latex for output
+#     "pgf.texsystem": "pdflatex",        # change this if using xetex or lautex
+#     "text.usetex": True,                # use LaTeX to write all text
+#     "font.serif": [],                   # blank entries should cause plots 
+#     "font.sans-serif": [],              # to inherit fonts from the document
+#     "font.monospace": [],
+# #     "axes.labelsize": 10,               # LaTeX default is 10pt font.
+#      "font.size": 10,
+# #     "legend.fontsize": 8,               # Make the legend/label fonts 
+#     "xtick.labelsize": 10,               # a little smaller
+#     "ytick.labelsize": 10,
+#     "pgf.preamble": [
+#             r"\usepackage{txfonts}",
+#             r"\usepackage{siunitx}",        # plots will be generated
+#             r"\usepackage{textcomp}"
+#             ]                                   # using this preamble
+#     }
 
 # pgf_with_latex = {                      # setup matplotlib to use latex for output
 #     "pgf.texsystem": "pdflatex",        # change this if using xetex or lautex
@@ -72,8 +77,8 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
 #         ]                                   # using this preamble
 #     }
 
-mpl.use("pgf")
-mpl.rcParams.update(pgf_with_latex)
+# mpl.use("pgf")
+# mpl.rcParams.update(pgf_with_latex)
 
 
 size = 12
@@ -91,6 +96,19 @@ purp = '#5e3c99'
 color1pts = '#00ff00';color1pts_al = .15
 color3pts = '#ffffbd';color3pts_al = .47
 color5pts = '#0000ff';color5pts_al = .18
+
+
+
+class Arrow3D(FancyArrowPatch):
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+        FancyArrowPatch.draw(self, renderer)
 
 
 def fill_axis(ax_main,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=True):
@@ -303,10 +321,10 @@ def constriction():
     #        #bbox=dict(boxstyle='square', fc='white'),
     #        arrowprops=dict(arrowstyle='<->', lw=.5))
 
-    ax11.text(-7.5,1,r'$'+str(2*a.base_radius)+'\mu$m')
+    ax11.text(-7.5,1,r'$'+str(2*a.base_radius)+r'$ \si{\um}')
 
     # annotate constriction length
-    ax11.annotate(r'$'+str(a.inner_width)+'\mu$m', xy=(0, a.Rc+1), xytext=(0, a.Rc+2), xycoords='data', 
+    ax11.annotate(r'$'+str(a.inner_width)+r'$ \si{\um}', xy=(0, a.Rc+1), xytext=(0, a.Rc+2), xycoords='data', 
             fontsize=10, ha='center', va='bottom',
             #bbox=dict(boxstyle='square', fc='white'),
             arrowprops=dict(arrowstyle='-[, widthB='+str(a.inner_width/2*.9)+', lengthB=.5', lw=.5))
@@ -872,7 +890,7 @@ def critical_manifold_with_ze():
 
 
     
-    #ax21.set_title(r'\textbf{A} Critical Manifold.\\ $R_p='+str(a.Rp)+'$, $R_c='+str(a.Rc)+'$, $\phi_1='+str(a.phi1)+'$, $\pi_5='+str(a.pi5)+'$')
+    #ax21.set_title(r'\textbf{A} Critical Manifold.\\ $R_p='+str(a.Rp)+'$, $R_c='+str(a.Rc)+'$, $\phi='+str(a.phi1)+'$, $\pi_5='+str(a.pi5)+'$')
     ax21.set_title(r'\textbf{D} Critical Manifold',x=0.2)
     ax21.set_xlabel(r'$Z$ (\si{\um})')
     ax21.set_ylabel(r'$U$ (\si{\um/s})')
@@ -1405,7 +1423,7 @@ def twopar_detailed():
     z2_value = 5.86*ze_scale
     z3_value = 2.72*ze_scale
 
-    phi_label = r'$\phi$' # r'$\phi_1$'
+    phi_label = r'$\phi$' # r'$\phi$'
     ze_label = r'$\zeta$' # r'$\tilde\zeta$'
     U_label = r'$U$ (\si{\um/s})'
     
@@ -1564,7 +1582,7 @@ def twopar_detailed():
     ax_ph1.set_title(r'\textbf{E} '+phi_label+'$=0.48$',x=.2,fontsize=size)
     ax_ph2.set_title(r'\textbf{F} '+phi_label+'$=0.49$',x=.2,fontsize=size)
 
-    #ax_ze1.set_xlabel('$\phi_1$')
+    #ax_ze1.set_xlabel('$\phi$')
     #ax_ze2.set_xlabel('$\phi_2$')
     ax_ze3.set_xlabel(phi_label,fontsize=size)
 
@@ -1719,7 +1737,7 @@ def pi4_vs_pi5():
     ax12.set_xlim(0.4,0.6)
     ax12.set_ylim(ze_min,ze_max)
     ax12.set_ylabel(r'$\zeta$  (\si{kg/s})',fontsize=12)
-    #ax12.set_xlabel('$\phi_1$')
+    #ax12.set_xlabel('$\phi$')
 
     ax12.set_title(r'\textbf{B} $\pi_4=3$, $\pi_5=0.15$')
 
@@ -1735,7 +1753,7 @@ def pi4_vs_pi5():
 
     ax21.set_xlim(0.4,0.6)
     ax21.set_ylim(-0.1*ze_scale,ze_max)
-    ax21.set_xlabel('$\phi_1$',fontsize=12)
+    ax21.set_xlabel('$\phi$',fontsize=12)
     #ax21.set_ylabel(r'$\zeta$  (\si{kg/s})',fontsize=12)
 
     ax21.set_title(r'\textbf{C} $\pi_4=1.5$, $\pi_5=0.3$')
@@ -1753,7 +1771,7 @@ def pi4_vs_pi5():
 
     ax22.set_xlim(0.4,0.6)
     ax22.set_ylim(ze_min,ze_max)
-    ax22.set_xlabel('$\phi_1$',fontsize=12)
+    ax22.set_xlabel('$\phi$',fontsize=12)
 
     ax22.set_ylabel(r'$\zeta$  (\si{kg/s})',fontsize=12)
 
@@ -1790,7 +1808,7 @@ def pi4_vs_pi5():
     #ax24.set_ylim(ze_min,ze_max)
 
     
-    ax23.set_xlabel('$\phi_1$',fontsize=12)
+    ax23.set_xlabel('$\phi$',fontsize=12)
 
     ax23.set_title(r'\textbf{E} $\pi_4=1.5$, $\pi_5=0.15$')
 
@@ -1863,13 +1881,489 @@ def minimal_2par():
     ax = fill_axis(ax,keys,val_dict,type_dict,ze_scale,tol=1e-3,beautify=False)
     ax.set_yscale('log')
     
-    ax.set_ylabel()
+    ax.set_ylabel(r'$\zeta$ (\si{kg/s})')
+    ax.set_xlabel(r'$\phi$')
 
     ax.set_ylim(3e-6,2e-2)
     ax.set_xlim(.4,.6)
 
     return fig
+
+
+def cylinder():
     
+    """
+    TODO: add small cartoon axes to subplots.
+    mmake dome head for spine figure
+    
+    """
+    
+    T1 = .1
+    
+    gs = gridspec.GridSpec(nrows=2,ncols=3,wspace=-.1,hspace=.5)
+    fig = plt.figure(figsize=(5,4))
+    ax11 = fig.add_subplot(gs[:,:2],projection='3d')
+    ax12 = fig.add_subplot(gs[0,2])
+    ax22 = fig.add_subplot(gs[1,2])
+    
+    
+    a = lubrication(phi1=.57,Rp=.96,Rc=1.22,
+                    pi3=1,pi4=4.7,pi5=0.1,pi6=10,
+                    mu=1.2,T=T1,constriction='piecewise',U0=0.2,
+                    dt=0.02,eps=1,
+                    F0=50,method='euler')
+    a.Z0 = -5/a.Rp
+    
+    z = np.linspace(-7,7,100)  # dimensional
+    r = a.pi1(z)
+    th = np.linspace(0,2*np.pi,100)
+    
+    radius_al = 0.25
+    
+    # draw arrow going into spine
+    
+    ar1 = Arrow3D([0,0],[0,0],[-5,-1],
+                  mutation_scale=10, 
+                  lw=2, arrowstyle="-|>", color="k")
+    
+    ax11.add_artist(ar1)
+    
+    # draw spine
+    Z,TH = np.meshgrid(z,th)
+    #Z,TH = np.mgrid[-7:7:.1, 0:2*np.pi:.1]
+    X = np.zeros_like(Z)
+    Y = np.zeros_like(Z)
+    print(np.shape(Z))
+    for i in range(len(Z[:,0])):
+        X[i,:] = a.pi1(Z[i,:])*np.cos(TH[i,:])
+        Y[i,:] = a.pi1(Z[i,:])*np.sin(TH[i,:])
+    
+    ax11.plot_surface(X,Y,Z,alpha=.25)
+    
+    shifts = np.array([3,-3,0])
+    names = ['x','y','z']
+    size = 2
+    
+    
+    for i in range(3):
+        coords = np.zeros((3,2))
+        
+        coords[:,0] += shifts
+        coords[:,1] += shifts
+        
+        coords[i][1] += size
+        arx = Arrow3D(*list(coords),
+                      mutation_scale=5, 
+                      lw=2, arrowstyle="-|>", color="k")
+    
+        ax11.text(*list(coords[:,1]),names[i],horizontalalignment='center')
+    
+        ax11.add_artist(arx)
+        
+    
+
+    # draw sphere for cap
+    b = a.base_radius
+    r = np.sqrt(b**2+7**2)
+    th2 = np.linspace(0,np.arctan(b/7),100)
+    phi = np.linspace(0,2*np.pi,100)
+    
+    TH2,PHI = np.meshgrid(th2,phi)
+    X = r*np.sin(TH2)*np.cos(PHI)
+    Y = r*np.sin(TH2)*np.sin(PHI)
+    Z = r*np.cos(TH2)
+    ax11.plot_surface(X,Y,Z,color='tab:blue',alpha=.5)
+
+ 
+    # highlight radius change
+    ax11.plot(a.base_radius*np.cos(th),
+              a.base_radius*np.sin(th),
+              7,color='tab:blue',alpha=radius_al)
+    ax11.plot(a.base_radius*np.cos(th),
+              a.base_radius*np.sin(th),
+              -5,color='tab:blue',alpha=radius_al)
+    ax11.plot(a.base_radius*np.cos(th),
+              a.base_radius*np.sin(th),
+              5,color='tab:blue',alpha=radius_al)
+    
+    ax11.plot(a.Rc*np.cos(th),
+              a.Rc*np.sin(th),
+              -a.inner_width/2,color='tab:blue',alpha=radius_al)
+    ax11.plot(a.Rc*np.cos(th),
+              a.Rc*np.sin(th),
+              a.inner_width/2,color='tab:blue',alpha=radius_al)
+    
+    # draw sphere vesicle
+    u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+    X = np.cos(u)*np.sin(v)
+    Y = np.sin(u)*np.sin(v)
+    Z = np.cos(v)
+    ax11.plot_surface(X,Y,Z,color='gray',alpha=.5)
+    
+    # label spine head and base
+    ax11.text(5,-5,6,'Spine Head')
+    
+    
+    ax11.text(5,-5,-6,'Spine Base')
+    
+    
+    # draw plane 1
+    plane1_color = 'green'
+    X,Y = np.meshgrid(np.linspace(-5,5,2),np.linspace(-5,5,2))
+    ax11.plot_surface(X,Y,np.zeros_like(X),color=plane1_color,alpha=0.0)
+    
+    # plot intersections of plane 1 with spine
+    #ax11.plot(a.Rc*np.cos(th),a.Rc*np.sin(th),
+    #          np.zeros_like(th),color=plane1_color)
+    
+    #ax11.plot(a.Rp*np.cos(th),a.Rp*np.sin(th),
+    #          np.zeros_like(th),color='gray')
+    
+    
+    # draw plane 2 (coronal)
+    #ax11.plot_surface(X,Y,Z,color='k')
+    plane1_color = 'green'
+    Y,Z = np.meshgrid(np.linspace(-7,7,10),np.linspace(-7,7,10))
+    ax11.plot_surface(np.zeros_like(Y),Y,Z,color=plane1_color,alpha=0.0)
+    
+    
+    # B
+    # Draw vesicle and spine wall
+    ax12.plot(a.Rc*np.cos(th),a.Rc*np.sin(th),color='tab:blue',alpha=.5)
+    ax12.fill(a.Rp*np.cos(th),a.Rp*np.sin(th),color='gray',alpha=.5)
+    
+    ax12.text(-.6,.4,'Vesicle')
+    ax12.text(.9,.9,'Spine Wall')
+    
+    # annotate Rp length
+    ax12.annotate('', xy=(0, -a.Rc), xytext=(0, 0), xycoords='data',
+            arrowprops=dict(arrowstyle='-|>',color='k', lw=1))
+    ax12.text(-.35,-.5,r'$R_c$')
+
+    # annotate Rc length channel
+    ax12.annotate(r'', xy=(a.Rp, 0.0), xytext=(0, 0), xycoords='data', 
+            arrowprops=dict(arrowstyle='-|>', color='k',lw=1))
+    ax12.text(.4,.2,r'$R_p$')
+    
+    # annotate Rc length channel
+    ax12.annotate(r'$h(z)$', xy=(1.08,-.1), xytext=(1.08, -1.5), xycoords='data', 
+            fontsize=10, ha='center', va='center',
+            #bbox=dict(boxstyle='square', fc='white'),
+            arrowprops=dict(arrowstyle='-[, widthB='+str(a.Rc-a.Rp+.2)+', lengthB=.5', lw=.5))
+
+    # draw axes
+    shift = .75
+    x_center, y_center = (-1.5,-1.5)
+
+    ax12.annotate(r'x', xy=(x_center,y_center),
+                  xytext=(x_center+shift,y_center),
+                  va='center',
+                  arrowprops=dict(mutation_scale=5, 
+                                  arrowstyle='<|-', 
+                                  color='k',lw=2),annotation_clip=False)
+    
+    ax12.annotate(r'y', xy=(x_center,y_center),
+                  xytext=(x_center,y_center+shift),
+                  ha='center', 
+                  arrowprops=dict(mutation_scale=5,
+                                  arrowstyle='<|-',
+                                  color='k',lw=2),annotation_clip=False)
+    
+    
+    
+    # C
+    # draw molecular motors
+    #ax22.plot(a.Rp*np.cos(th),a.Rp*np.sin(th),color='k',alpha=1)
+    
+    
+    pad = .15
+    #ax22.plot(a.Rp*np.cos(th),a.Rp*np.sin(th),color='gray')
+    ax22.fill(a.Rp*np.cos(th),a.Rp*np.sin(th),color='gray',alpha=.5)
+    
+    ax22.plot([a.Rc+pad,a.Rc+pad],[-2,2],color='tab:blue',alpha=.5)
+    ax22.plot([-a.Rc-pad,-a.Rc-pad],[-2,2],color='tab:blue',alpha=.5)
+    
+    
+    ax22.text(0,0,'Vesicle',ha='center',va='center')
+    ax22.text(-a.Rc-3*pad,0,'Spine Wall',rotation=90)
+    
+    ax22.annotate(r'Center of Mass $Z$',xy=(a.Rp,0),xytext=(a.Rc+4*pad,0),
+                  ha='center',va='center',rotation=-90,
+                  arrowprops=dict(arrowstyle='-|>',
+                                  color='k',lw=1),annotation_clip=False)
+    
+    # draw axes
+    shift = .75
+    x_center, y_center = (-1.5,-1.5)
+
+    ax22.annotate(r'x,y', xy=(x_center,y_center),
+                  xytext=(x_center+shift,y_center),
+                  va='center',
+                  arrowprops=dict(mutation_scale=5, 
+                                  arrowstyle='<|-', 
+                                  color='k',lw=2),
+                  annotation_clip=False)
+    
+    ax22.annotate(r'z', xy=(x_center,y_center),
+                  xytext=(x_center,y_center+shift),
+                  ha='center', 
+                  arrowprops=dict(mutation_scale=5,
+                                  arrowstyle='<|-',
+                                  color='k',lw=2),
+                  annotation_clip=False)
+    
+    
+    #ax12.plot(z,r)
+    ax11.set_title(r'\textbf{A} Idealized Spine Geometry',x=.45,y=1.09)
+    ax12.set_title(r'\textbf{B} Transverse Cross-section',x=.5)
+    ax22.set_title(r'\textbf{C} Molecular Motors',x=.27)
+    
+    
+    # set equal aspect ratios
+    ax12.set_aspect(1)
+    ax22.set_aspect(1)
+    #divider = make_axes_locatable(ax12)
+    #ax12b = divider.append_axes("bottom",size=.8,pad=.2)
+    
+    ax11.set_axis_off()
+    ax12.set_axis_off()
+    ax22.set_axis_off()
+    
+    ax22.set_xticks([])
+    ax22.set_yticks([])
+    
+    lo = -4.4
+    hi = 4.4
+    
+    dx = -.5
+    
+    ax11.set_xlim(lo-dx,hi+dx)
+    ax11.set_ylim(lo-dx,hi+dx)
+    ax11.set_zlim(lo,hi)
+    
+    ax22.set_xlim(-1.4,1.4)
+    ax22.set_ylim(-1.4-pad,1.4+pad)
+    
+    ax11.view_init(20,45)
+    
+    return fig
+
+def fv():
+    gs = gridspec.GridSpec(nrows=2,ncols=3,wspace=.5,hspace=.7)
+    fig = plt.figure(figsize=(8,4))
+    ax11 = fig.add_subplot(gs[0,0])
+    ax12 = fig.add_subplot(gs[0,1])
+    ax13 = fig.add_subplot(gs[0,2])
+
+    ax21 = fig.add_subplot(gs[1,0])
+    ax22 = fig.add_subplot(gs[1,1])
+    ax23 = fig.add_subplot(gs[1,2])
+    
+    
+    # parset 1 
+    # A,D
+    kwargs = {'phi1':.51,'Rp':.96,'Rc':1.22,
+              'pi3':1,'pi4':4.7,'pi5':0.1,'pi6':10,
+              'mu':1.2,'T':.01,'constriction':'piecewise','U0':0.2,
+              'dt':0.02,'eps':1,'ze':6,'F0':50,'method':'euler'}
+    
+    a = lubrication(**kwargs)
+    a.Z0 = -5/a.Rp
+    
+    Us = np.linspace(-.1,.1,5000)
+    
+    title = r'\textbf{A} $\phi='+str(a.phi1)+'$, $\zeta='+str(a.ze)+'$'
+    ax11.set_title(title,x=0.4)
+    ax11.plot(Us,a.phi1*a.FAm(Us),color='tab:blue',
+              label='$\phi F_{-A}(U)$',ls='--',dashes=[2,1])
+    ax11.plot(Us,(1-a.phi1)*a.FA(Us),color='tab:red',
+              label='$(1-\phi)F_A(U)$',ls='--',dashes=[2,1])
+    ax11.plot(Us,a.ze*Us,color='gray',ls='-',lw=1,
+              label=r'$\zeta U$')
+    ax11.plot(Us,a.F(Us),color='tab:purple',
+              label=r'$\phi F_{-A}(U) + (1-\phi)F_{A}(U)$')
+    
+    # total force
+    total_f = a.F(Us)-a.ze*Us
+
+    # get zeros
+    c_idxs = np.where(np.diff(np.sign(total_f)))[0][1:-1]
+    ax21.plot([Us[0],Us[-1]],[0,0],color='gray',lw=1)
+    ax21.plot(Us,a.F(Us)-a.ze*Us,color='tab:green')
+    
+    # label crossings    
+    ax21.scatter(Us[c_idxs],np.zeros(len(Us[c_idxs])),color='k',
+                 zorder=6,s=6,label='Force-Balance')
+    ax11.scatter(Us[c_idxs],a.F(Us)[c_idxs],color='k',zorder=6,s=6)
+    
+    # draw stability arrows
+    ax21.arrow(-.03,0,.02,0,
+               head_width=0.02,head_length=0.005,zorder=9,
+               fc='k')
+    ax21.arrow(.045,0,-.005,0,
+               head_width=0.02,head_length=0.005,zorder=6,
+               fc='k')
+    
+    # inset
+    axins = inset_axes(ax21, width="60%", height="30%", loc=3)
+    axins.plot([Us[0],Us[-1]],[0,0],color='gray',lw=1)
+    axins.plot(Us,(a.F(Us)-a.ze*Us),color='tab:green')
+    axins.scatter(Us[c_idxs],np.zeros(len(Us[c_idxs])),color='k',zorder=6,s=6)    
+    mark_inset(ax21, axins, loc1=2, loc2=4, fc="none", ec='0.5',alpha=0.5)
+    # draw stability arrows
+    axins.arrow(-.005,0,.001,0,
+               head_width=0.005,head_length=0.002,zorder=9,
+               fc='k')
+    axins.arrow(.006,0,-.001,0,
+               head_width=0.005,head_length=0.002,zorder=6,
+               fc='k')
+    axins.arrow(.015,0,.001,0,
+               head_width=0.005,head_length=0.002,zorder=6,
+               fc='k')
+    axins.arrow(.033,0,-.001,0,
+               head_width=0.005,head_length=0.002,zorder=6,
+               fc='k')
+    axins.set_xticks([])
+    axins.set_yticks([])
+    axins.set_xlim(-.01,.035)
+    axins.set_ylim(-.02,.02)
+    
+    
+    # parset 2
+    # B,E
+    kwargs['phi1'] = 0.57
+    kwargs['ze'] = 8
+    a.__init__(**kwargs)
+    
+    Us = np.linspace(-.1,.1,1000)
+    title = r'\textbf{B} $\phi='+str(a.phi1)+'$, $\zeta='+str(a.ze)+'$'
+    ax12.set_title(title,x=0.4)
+    ax12.plot(Us,a.phi1*a.FAm(Us),color='tab:blue',
+              label='$\phi F_{-A}(U)$',ls='--',dashes=[2,1])
+    ax12.plot(Us,(1-a.phi1)*a.FA(Us),color='tab:red',
+              label='(1-\phi)$F_A(U)$',ls='--',dashes=[2,1])
+    ax12.plot(Us,a.ze*Us,color='gray',lw=1,
+              label=r'$\zeta U$')
+    ax12.plot(Us,a.F(Us),color='tab:purple',
+              label=r'$\phi F_{-A}(U) + (1-\phi)F_{A}(U)$')
+    
+    # total force
+    total_f = a.F(Us)-a.ze*Us
+
+    # get zeros
+    c_idxs = np.where(np.diff(np.sign(total_f)))[0][1:-1]
+    ax22.plot([Us[0],Us[-1]],[0,0],color='gray',lw=1)
+    ax22.plot(Us,a.F(Us)-a.ze*Us,color='tab:green')
+    
+    # label crossings    
+    ax22.scatter(Us[c_idxs],np.zeros(len(Us[c_idxs])),color='k',zorder=6,s=6)
+    ax12.scatter(Us[c_idxs],a.F(Us)[c_idxs],color='k',zorder=6,s=6)
+    
+    
+    # draw stability arrows
+    ax22.arrow(-.025,0,.03,0,
+               head_width=0.04,head_length=0.01,zorder=9,
+               fc='k')
+    ax22.arrow(.085,0,-.03,0,
+               head_width=0.04,head_length=0.01,zorder=6,
+               fc='k')
+    
+    # parset 3
+    # C,F
+    kwargs['phi1'] = .48
+    kwargs['ze'] = 3
+    a.__init__(**kwargs)
+    
+    Us = np.linspace(-.1,.1,1000)
+    
+    title = r'\textbf{C} $\phi='+str(a.phi1)+'$, $\zeta='+str(a.ze)+'$'
+    ax13.set_title(title,x=0.4)
+    ax13.plot(Us,a.phi1*a.FAm(Us),color='tab:blue',
+              label='$\phi F_{-A}(U)$',ls='--',dashes=[2,1])
+    ax13.plot(Us,(1-a.phi1)*a.FA(Us),color='tab:red',
+              label='(1-\phi)$F_A(U)$',ls='--',dashes=[2,1])
+    ax13.plot(Us,a.ze*Us,color='gray',lw=1,
+              label=r'$\zeta U$')
+    ax13.plot(Us,a.F(Us),color='tab:purple',
+              label=r'$\phi F_{-A}(U) + (1-\phi)F_{A}(U)$')
+    
+    
+    
+    ax23.plot([Us[0],Us[-1]],[0,0],color='gray',lw=1)
+    
+    # total force
+    total_f = a.F(Us)-a.ze*Us
+
+    # get zeros
+    c_idxs = np.where(np.diff(np.sign(total_f)))[0][1:-1]
+    ax23.plot(Us,total_f,color='tab:green')
+    
+    # label crossings    
+    ax23.scatter(Us[c_idxs],np.zeros(len(Us[c_idxs])),color='k',zorder=6,s=6)
+    ax13.scatter(Us[c_idxs],a.F(Us)[c_idxs],color='k',zorder=6,s=6)
+    
+    # draw stability arrows
+    ax23.arrow(-.095,0,.01,0,
+               head_width=0.02,head_length=0.01,zorder=9,
+               fc='k')
+    ax23.arrow(-.02,0,-.02,0,
+               head_width=0.02,head_length=0.01,zorder=6,
+               fc='k')
+    ax23.arrow(.02,0,.01,0,
+               head_width=0.02,head_length=0.01,zorder=9,
+               fc='k')
+    ax23.arrow(.093,0,-.02,0,
+               head_width=0.02,head_length=0.01,zorder=6,
+               fc='k')
+    
+    # end par3
+    
+    # tweaks and labels
+    ax11.legend(bbox_to_anchor=(1.9, 1.5), loc='upper center',ncol=4)
+    ax21.legend(loc='upper right',fontsize=8)
+    
+    
+    ax11.set_xlabel('U (Nondimensional)')
+    ax11.set_ylabel('F (Nondimensional)')
+    
+    ax12.set_xlabel('U (Nondimensional)')
+    ax12.set_ylabel('F (Nondimensional)')
+    
+    ax13.set_xlabel('U (Nondimensional)')
+    ax13.set_ylabel('F (Nondimensional)')
+    
+    ax21.set_xlabel('U (Nondimensional)')
+    ax21.set_ylabel('F (Nondimensional)')
+    
+    ax22.set_xlabel('U (Nondimensional)')
+    ax22.set_ylabel('F (Nondimensional)')
+    
+    ax23.set_xlabel('U (Nondimensional)')
+    ax23.set_ylabel('F (Nondimensional)')
+    
+    #ax11.set_xlim(Us[0],Us[-1])
+    ax11.set_xlim(-.05,.05)
+    ax12.set_xlim(Us[0],Us[-1])
+    ax13.set_xlim(Us[0],Us[-1])
+    
+    ax21.set_xlim(-.05,.05)
+    ax22.set_xlim(Us[0],Us[-1])
+    ax23.set_xlim(Us[0],Us[-1])
+    
+    ax11.set_ylim(-.55,.55)
+    
+    ax21.set_ylim(-.2,.2)
+    ax22.set_ylim(-.4,.4)
+    ax23.set_ylim(-.2,.2)
+    
+    
+    ax21.set_title(r'\textbf{D} Total Force',x=0.3)
+    ax22.set_title(r'\textbf{E} Total Force',x=0.3)
+    ax23.set_title(r'\textbf{F} Total Force',x=0.3)
+    #ax11.plot(Us,a.F(Us))
+    
+    
+    return fig
 
 def generate_figure(function, args, filenames, dpi=100):
     # workaround for python bug where forked processes use the same random 
@@ -1894,11 +2388,13 @@ def generate_figure(function, args, filenames, dpi=100):
 def main():
     
     figures = [
-        (constriction,[],["constriction.pdf","constriction.png"]), # figure 1
-        (critical_manifold_with_ze,[],["critical_manifold.pdf","critical_manifold.png"]), # figure 2
-        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # figure 3
-        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # figure 4
-        (minimal_2par,[],["minimal_2par.pdf"]), # figure 5
+        (cylinder,[],['cylinder.pdf']),
+        #(fv,[],['fv.pdf']),
+        #(constriction,[],["constriction.pdf"]), # figure 1
+        #(critical_manifold_with_ze,[],["critical_manifold.pdf"]),
+        #(twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), # figure 3
+        #(pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]), # figure 4
+        #(minimal_2par,[],["minimal_2par.pdf"]), # figure 5
     ]
     
     for fig in figures:
