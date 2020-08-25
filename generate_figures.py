@@ -13,7 +13,6 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, mark_inset)
 
-
 from lib import collect_disjoint_branches
 from lubrication import lubrication
 
@@ -2300,6 +2299,143 @@ def fv():
     
     return fig
 
+
+def allard():
+    
+    from matplotlib import cm
+    from allard.allard import kn_drag,kp_drag
+    import matplotlib.lines as mlines
+    
+    fig = plt.figure(figsize=(6,5))
+    gs = fig.add_gridspec(2,2)
+    ax11 = fig.add_subplot(gs[0,0])
+    ax12 = fig.add_subplot(gs[0,1])
+    ax21 = fig.add_subplot(gs[1,0])
+    ax22 = fig.add_subplot(gs[1,1])
+
+    col = cm.viridis(np.linspace(0,0.75,3))
+
+    # A plot Fai et al.
+    a = lubrication(phi1=.5,Rp=.96,Rc=1.22,pi5=.1,T=.05)
+    U = np.linspace(-.5,.5,300)
+    
+    #ax1.plot(U,,label='Viscous Drag')
+    ax11.plot([U[0],U[-1]],[0,0],color='gray',ls='--')
+
+    ax11.plot(U,a.F(U)-U*0.4,label=r'$\zeta=0.4$',color=col[0])
+    ax11.plot(U,a.F(U)-U*1,label=r'$\zeta=1$',color=col[1])
+    ax11.plot(U,a.F(U)-U*4,label=r'$\zeta=4$',color=col[2])
+    
+    
+    # B plot bifurcation diagram. get stabl/unstable brute force.
+    ze_vals = np.linspace(0,5,200)
+    
+    pointx = []
+    pointy = []
+    stability = []
+    
+    for i,ze in enumerate(ze_vals):
+        h = a.F(U)-U*ze
+        crossing_idxs = np.where(np.diff(np.sign(h)))[0]
+        crossing_idxs = np.append(crossing_idxs,0)
+        # check stability at each zero
+        for crossing_idx in crossing_idxs:
+            if crossing_idx == 0:   
+                diff = h[1] - h[0]
+                #print(diff,h[:10])
+            else:
+                diff = h[crossing_idx] - h[crossing_idx-1]
+                
+            
+            pointx.append(ze)
+            pointy.append(crossing_idx)
+            
+            if diff > 0:
+                stability.append('r')
+            else:
+                stability.append('k')
+
+    skipn = 1
+    px = pointx[::skipn]
+    py = pointy[::skipn]
+    
+    
+    for i in range(len(px)):
+        ax12.scatter(px[i],U[py[i]],color=stability[::skipn][i],s=1)
+    
+    # label saddle-node
+    ax12.annotate('SN',xy=(3.2,.03),xytext=(3.7,.05),xycoords='data',
+                  ha='center',
+                  arrowprops=dict(arrowstyle='->',color='k', lw=1))
+    
+    ax12.annotate('',xy=(3.2,-.03),xytext=(3.7,.05),xycoords='data',
+                  ha='center',
+                  arrowprops=dict(arrowstyle='->',color='k', lw=1))
+    
+    
+    # D bifurcaiton allard
+    par_ze = np.loadtxt('allard/allard_1par_ze.dat')
+
+    # get stable and unstable
+    stable_idx = par_ze[:,0]==1
+    unstable_idx = par_ze[:,0]==2
+    ax22.scatter(par_ze[stable_idx,3],par_ze[stable_idx,6],
+                 color='k',s=1,label='Stable')
+    ax22.scatter(par_ze[unstable_idx,3],par_ze[unstable_idx,6],
+                 color='r',s=1,label='Unstable')
+    
+    # label pitchfork
+    ax22.annotate('Pitchfork',xy=(8.7,0.48),xytext=(4.5,.35),xycoords='data',
+               arrowprops=dict(arrowstyle='->',color='k', lw=1))
+
+    
+    # C plot Allard et al.
+    x = np.linspace(0,1,100)
+    ax21.plot([x[0],x[-1]],[0,0],color='gray',ls='--')
+    
+    
+    ax21.plot(x,kp_drag(x,2)-kn_drag(x,2),label='$\zeta=2$',color=col[0])
+    ax21.plot(x,kp_drag(x,5)-kn_drag(x,5),label='$\zeta=5$',color=col[1])
+    ax21.plot(x,kp_drag(x,9)-kn_drag(x,9),label='$\zeta=10$',color=col[2])
+
+    # D plot bifurcation diagram
+    ax11.set_xlabel(r'Velocity $U$',fontsize=size)
+    ax12.set_xlabel(r'Viscous Drag $\zeta$',fontsize=size)
+    ax21.set_xlabel(r'Motor States $x$',fontsize=size)
+    ax22.set_xlabel(r'Viscous Drag $\zeta$',fontsize=size)
+    
+    ax11.set_ylabel(r'Net Force $F$',fontsize=size)
+    ax12.set_ylabel(r'Velocity $U$',fontsize=size)
+    ax21.set_ylabel(r'Rate Difference',fontsize=size)
+    ax22.set_ylabel(r'Motor States $x$',fontsize=size)
+    
+    ax11.set_title(r'\textbf{A} Lubrication Model',x=.25)
+    ax12.set_title(r'\textbf{B} Bifurcation',x=.3)
+    
+    ax21.set_title(r'\textbf{C} Allard et al. 2019',x=.3)
+    ax22.set_title(r'\textbf{D} Bifurcation',x=.3)
+    
+    
+    
+    ax11.set_xlim(-.5,.5)
+    ax12.set_xlim(0,4)
+    ax21.set_xlim(0,1)
+    ax22.set_xlim(0,9.5)
+
+    ax11.set_ylim(-.5,.5)
+    ax12.set_ylim(-.1,.1)
+    
+    ax11.legend(labelspacing=.1)
+    ax21.legend(labelspacing=.1)
+    
+    red_patch = mlines.Line2D([],[],color='red', label='Unstable',ls='-',lw=2)
+    blk_patch = mlines.Line2D([],[],color='black', label='Stable',lw=2)
+    ax12.legend(handles=[red_patch,blk_patch],labelspacing=.1)
+
+    plt.tight_layout()
+
+    return fig
+
 def generate_figure(function, args, filenames, dpi=100):
     # workaround for python bug where forked processes use the same random 
     # filename.
@@ -2324,13 +2460,14 @@ def main():
     
     # listed in order of Figures in paper
     figures = [
-        (cylinder,[],['cylinder.pdf']),
-        (fv,[],['fv.pdf']),
-        (constriction,[],["constriction.pdf"]),
-        (critical_manifold_with_ze,[],["critical_manifold.pdf"]),
-        (twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), 
-        (pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]),
-        (minimal_2par,[],["minimal_2par.pdf"]),
+        #(cylinder,[],['cylinder.pdf']),
+        #(fv,[],['fv.pdf']),
+        #(constriction,[],["constriction.pdf"]),
+        #(critical_manifold_with_ze,[],["critical_manifold.pdf"]),
+        #(twopar_detailed,[],["bifurcations.pdf","bifurcations.png"]), 
+        #(pi4_vs_pi5,[],["pi4_vs_pi5.pdf"]),
+        #(minimal_2par,[],["minimal_2par.pdf"]),
+        (allard,[],["allard.pdf"]),
     ]
     
     for fig in figures:
