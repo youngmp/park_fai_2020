@@ -2,7 +2,7 @@
 """
 Created on Tue Aug 25 11:50:39 2020
 
-Minimal code required to produce critical manifold curves.
+Minimal code showing how we extract and color the critical manifolds.
 
 """
 
