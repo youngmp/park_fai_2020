@@ -1,4 +1,6 @@
 # park_fai_2020
+[![DOI](https://zenodo.org/badge/244737542.svg)](https://zenodo.org/badge/latestdoi/244737542)
+
 We require the following programs/libraries:
 Python3 + numpy, scipy, matplotlib.
 
